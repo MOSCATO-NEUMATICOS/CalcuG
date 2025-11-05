@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Calculadora de Mano de Obra - Suspensión</title>
+  <meta name="description" content="Calculadora de tiempos y mano de obra para trabajos de suspensión automotriz." />
+  <style>
+    :root{
+      --bg:#0f172a;
+      --panel:#111827;
+      --muted:#94a3b8;
+      --text:#e5e7eb;
+      --primary:#4f46e5;
+      --primary-700:#4338ca;
+      --accent:#22c55e;
+      --danger:#ef4444;
+      --warn:#f59e0b;
+      --card:#0b1220;
+      --border:#1f2937;
+      --chip:#1f2937;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:linear-gradient(180deg,#0b1022,#0a0f1a 60%,#080d17);
+      color:var(--text);
+      font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial;
+      line-height:1.35;
+    }
+    header{
+      padding:24px 16px 8px;
+      border-bottom:1px solid var(--border);
+      position:sticky; top:0; backdrop-filter:saturate(140%) blur(6px);
+      background:rgba(8,12,24,.75);
+      z-index:10;
+    }
+    .wrap{max-width:1200px;margin:0 auto;padding:0 12px}
+    h1{margin:0 0 6px;font-size:22px;letter-spacing:.2px}
+    .sub{color:var(--muted);font-size:14px}
+    main{padding:16px 0 32px}
+    .grid{
+      display:grid; gap:16px;
+      grid-template-columns: 1fr 1.2fr;
+    }
+    @media (max-width:900px){ .grid{grid-template-columns:1fr} }
+
+    .card{
+      background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));
+      border:1px solid var(--border);
+      border-radius:12px; padding:16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25) inset, 0 10px 20px rgba(0,0,0,.15);
+    }
+    h2{font-size:18px;margin:0 0 12px}
+    h3{font-size:14px;margin:14px 0 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+
+    label{display:block;font-size:13px;color:var(--muted);margin:8px 0 6px}
+    select,input[type="text"],input[type="number"]{
+      width:100%; background:#0b1220; color:var(--text);
+      border:1px solid var(--border); border-radius:10px; padding:10px 12px; font-size:14px;
+      outline:none; transition:border .15s ease, box-shadow .15s ease;
+    }
+    select:focus,input:focus{border-color:#2b3855; box-shadow:0 0 0 3px rgba(79,70,229,.15)}
+
+    .row{display:grid; gap:8px; grid-template-columns:1fr 1fr}
+    @media (max-width:600px){ .row{grid-template-columns:1fr} }
+
+    .stepper{display:flex; align-items:center; gap:8px}
+    .stepper input{
+      max-width:120px; text-align:center; font-variant-numeric:tabular-nums;
+    }
+    .btn{
+      appearance:none; border:1px solid var(--border); color:var(--text);
+      background:linear-gradient(180deg,#141a2d,#0d1424);
+      padding:10px 14px; border-radius:10px; font-weight:600; cursor:pointer;
+      transition:transform .02s ease, background .2s, border .2s;
+    }
+    .btn:hover{border-color:#2b3855}
+    .btn:active{transform:translateY(1px)}
+    .btn.primary{background:linear-gradient(180deg, var(--primary), var(--primary-700)); border-color:transparent}
+    .btn.success{background:linear-gradient(180deg,#16a34a,#15803d); border-color:transparent}
+    .btn.warn{background:linear-gradient(180deg,#f59e0b,#d97706); border-color:transparent}
+    .btn.ghost{background:transparent}
+    .btn.small{padding:6px 10px; font-size:13px; border-radius:8px}
+    .btn.icon{width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center; padding:0; font-size:18px}
+    .btn.round{border-radius:999px}
+
+    .chips{display:flex; gap:8px; flex-wrap:wrap}
+    .chip{
+      background:var(--chip); border:1px solid var(--border); color:var(--text);
+      padding:6px 10px; font-size:13px; border-radius:999px; cursor:pointer; user-select:none;
+    }
+    .chip.active{background:rgba(79,70,229,.2); border-color:var(--primary); box-shadow:0 0 0 2px rgba(79,70,229,.15) inset}
+
+    .muted{color:var(--muted)}
+    .hr{height:1px;background:var(--border);margin:14px 0}
+
+    table{width:100%; border-collapse:collapse}
+    th,td{padding:10px; border-bottom:1px dashed #1d2435; text-align:left; font-size:14px}
+    th{color:#93a1bd; font-weight:600}
+    tbody tr:hover{background:rgba(255,255,255,.02)}
+    .right{text-align:right}
+    .nowrap{white-space:nowrap}
+    .mono{font-variant-numeric:tabular-nums}
+
+    .tag{
+      display:inline-flex; align-items:center; gap:6px;
+      background:#0d1424; border:1px solid #25304a; border-radius:999px; padding:4px 8px; font-size:12px; color:#cbd5e1;
+    }
+    .tag .dot{width:8px; height:8px; border-radius:50%}
+    .left .dot{background:#60a5fa}
+    .right .dot{background:#f472b6}
+    .both .dot{background:#34d399}
+
+    .summary{
+      display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+      padding:12px; border:1px solid var(--border); border-radius:12px; background:#0b1220;
+    }
+    .summary .kpi{display:flex; flex-direction:column; gap:4px}
+    .summary .kpi .v{font-size:18px; font-weight:700}
+    .summary .kpi .l{font-size:12px; color:var(--muted)}
+
+    .note{font-size:12px; color:#9aa7c7}
+
+    /* Print */
+    @media print{
+      header, .no-print{display:none}
+      body{background:white; color:black}
+      .card{box-shadow:none; border:1px solid #ddd}
+      .summary{border-color:#ddd; background:white}
+      a::after{content:""}
+    }
+  </style>
+</head>
+<body>
+  <header class="no-print">
+    <div class="wrap">
+      <h1>Calculadora de Mano de Obra — Suspensión</h1>
+      <div class="sub">Selecciona vehículo, define piezas y cantidades, y obtén tiempos y costo de mano de obra.</div>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap grid">
+
+      <!-- Panel izquierdo: selección y nuevas piezas -->
+      <section class="card">
+        <h2>Configurar trabajo</h2>
+
+        <h3>Vehículo</h3>
+        <div class="row">
+          <div>
+            <label for="brandSelect">Marca</label>
+            <select id="brandSelect"></select>
+          </div>
+          <div>
+            <label for="modelSelect">Modelo</label>
+            <select id="modelSelect"></select>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <h3>Agregar tarea/pieza</h3>
+        <div class="row">
+          <div>
+            <label for="partSelect">Pieza</label>
+            <select id="partSelect"></select>
+          </div>
+          <div>
+            <label for="timeInput">Tiempo por unidad (h)</label>
+            <input type="number" id="timeInput" step="0.1" min="0" placeholder="Ej: 1.2" />
+          </div>
+        </div>
+
+        <label>Lado</label>
+        <div class="chips" id="sideChips">
+          <div class="chip active" data-side="ambos">Ambos</div>
+          <div class="chip" data-side="izquierdo">Izquierdo</div>
+          <div class="chip" data-side="derecho">Derecho</div>
+        </div>
+
+        <label style="margin-top:10px">Cantidad</label>
+        <div class="stepper">
+          <button class="btn icon round" id="qtyMinus" title="Restar">−</button>
+          <input type="number" id="qtyInput" min="1" step="1" value="1" />
+          <button class="btn icon round" id="qtyPlus" title="Sumar">+</button>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-top:12px">
+          <button class="btn primary" id="addItemBtn">Agregar al trabajo</button>
+          <button class="btn ghost" id="clearFormBtn" title="Limpiar selección">Limpiar</button>
+        </div>
+
+        <div class="hr"></div>
+
+        <h3>Agregar nueva pieza al catálogo</h3>
+        <div class="row">
+          <div>
+            <label for="newPartName">Nombre de la pieza</label>
+            <input type="text" id="newPartName" placeholder="Ej: Amortiguador delantero" />
+          </div>
+          <div>
+            <label for="newPartTime">Tiempo por unidad (h)</label>
+            <input type="number" id="newPartTime" step="0.1" min="0" placeholder="Ej: 1.2" />
+          </div>
+        </div>
+        <label>Ámbito</label>
+        <div class="chips" id="scopeChips">
+          <div class="chip active" data-scope="global">Global</div>
+          <div class="chip" data-scope="modelo" id="scopeModeloChip" title="Se agregará al modelo seleccionado">Solo este modelo</div>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:12px">
+          <button class="btn success" id="addPartBtn">Agregar pieza</button>
+          <button class="btn ghost" id="resetCatalogBtn" title="Restablece el catálogo de ejemplo">Restablecer catálogo</button>
+        </div>
+
+        <div class="hr"></div>
+
+        <h3>Tarifa por hora (opcional)</h3>
+        <div class="row">
+          <div>
+            <label for="rateInput">Tarifa por hora</label>
+            <input type="number" id="rateInput" step="1" min="0" placeholder="Ej: 15000" />
+          </div>
+          <div>
+            <label for="currencyInput">Moneda</label>
+            <input type="text" id="currencyInput" maxlength="6" placeholder="Ej: $" />
+          </div>
+        </div>
+        <div class="note" style="margin-top:8px">
+          Si la tarifa es 0 o está vacía, se calculará solo el tiempo sin costo.
+        </div>
+      </section>
+
+      <!-- Panel derecho: items y resumen -->
+      <section class="card">
+        <h2>Trabajo actual</h2>
+
+        <div class="summary">
+          <div class="kpi">
+            <div class="l">Tiempo total</div>
+            <div class="v mono" id="totalTimeHuman">0 h 0 min</div>
+            <div class="l mono" id="totalTimeRaw">0.0 h</div>
+          </div>
+          <div class="kpi">
+            <div class="l">Tarifa</div>
+            <div class="v mono" id="rateDisplay">—</div>
+            <div class="l">Por hora</div>
+          </div>
+          <div class="kpi">
+            <div class="l">Costo mano de obra</div>
+            <div class="v mono" id="totalCost">—</div>
+          </div>
+          <div style="display:flex; gap:8px">
+            <button class="btn" id="printBtn" title="Imprimir o guardar como PDF">🖨️ Imprimir</button>
+            <button class="btn warn" id="clearJobBtn" title="Vaciar el trabajo actual">Limpiar</button>
+          </div>
+        </div>
+
+        <div style="margin-top:12px; overflow:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Pieza</th>
+                <th>Vehículo</th>
+                <th>Lado</th>
+                <th class="right">Cant.</th>
+                <th class="right">Tiempo/U (h)</th>
+                <th class="right">Subtotal (h)</th>
+                <th class="right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="itemsTbody">
+              <tr><td colspan="7" class="muted">Aún no hay ítems. Agrega piezas desde el panel izquierdo.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note" style="margin-top:8px">
+          Consejo: Puedes editar la cantidad y tiempo por unidad directamente en la tabla. Todo se guarda automáticamente en tu navegador.
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    // ================== Datos base ==================
+    const STORAGE = {
+      catalog: 'suspenCatalog_v1',
+      job: 'suspenJob_v1',
+      settings: 'suspenSettings_v1'
+    };
+
+    const defaultCatalog = {
+      brands: {
+        Toyota: {
+          models: {
+            "Corolla (2014-2019)": {
+              parts: {
+                "Amortiguador delantero": 1.2,
+                "Amortiguador trasero": 0.7,
+                "Bieleta (estabilizadora)": 0.5,
+                "Buje de parrilla": 1.0,
+                "Rótula inferior": 0.9
+              }
+            },
+            "Hilux (2016-2020)": {
+              parts: {
+                "Amortiguador delantero": 1.5,
+                "Amortiguador trasero": 1.0,
+                "Bieleta (estabilizadora)": 0.6,
+                "Rótula inferior": 1.1
+              }
+            }
+          }
+        },
+        Volkswagen: {
+          models: {
+            "Golf MK7 (2013-2019)": {
+              parts: {
+                "Amortiguador delantero": 1.1,
+                "Amortiguador trasero": 0.8,
+                "Buje de parrilla": 1.1
+              }
+            }
+          }
+        },
+        Ford: {
+          models: {
+            "F-150 (2015-2020)": {
+              parts: {
+                "Amortiguador delantero": 1.6,
+                "Amortiguador trasero": 1.2,
+                "Resorte helicoidal": 1.3
+              }
+            }
+          }
+        }
+      },
+      globalParts: {
+        "Amortiguador delantero": 1.3,
+        "Amortiguador trasero": 0.9,
+        "Bieleta (estabilizadora)": 0.5,
+        "Buje de parrilla": 1.1,
+        "Rótula inferior": 0.9,
+        "Rótula superior": 0.9,
+        "Resorte helicoidal": 1.0,
+        "Bujes barra estabilizadora": 1.0
+      }
+    };
+
+    // ================== Estado ==================
+    let catalog = loadCatalog();
+    let job = loadJob();
+    let settings = loadSettings();
+
+    // ================== Utilidades ==================
+    function saveCatalog(){ localStorage.setItem(STORAGE.catalog, JSON.stringify(catalog)); }
+    function loadCatalog(){
+      const stored = localStorage.getItem(STORAGE.catalog);
+      if (stored) { try { return JSON.parse(stored); } catch(e){ console.warn(e); } }
+      localStorage.setItem(STORAGE.catalog, JSON.stringify(defaultCatalog));
+      return JSON.parse(JSON.stringify(defaultCatalog));
+    }
+
+    function saveJob(){ localStorage.setItem(STORAGE.job, JSON.stringify(job)); }
+    function loadJob(){
+      const stored = localStorage.getItem(STORAGE.job);
+      if (stored) { try { return JSON.parse(stored); } catch(e){ console.warn(e); } }
+      return { items: [] };
+    }
+
+    function saveSettings(){ localStorage.setItem(STORAGE.settings, JSON.stringify(settings)); }
+    function loadSettings(){
+      const stored = localStorage.getItem(STORAGE.settings);
+      if (stored) { try { return JSON.parse(stored); } catch(e){ console.warn(e); } }
+      return { rate: 0, currency: "$" };
+    }
+
+    function uniq(arr){ return [...new Set(arr)]; }
+    function num(v){
+      if (typeof v === 'number') return v;
+      if (!v) return 0;
+      return parseFloat(String(v).replace(',', '.')) || 0;
+    }
+    function fmtMoney(value, currency){
+      if (value === null || value === undefined || isNaN(value)) return '—';
+      try {
+        // Modo simple y robusto, independientemente del locale:
+        return `${currency || "$"} ${Number(value).toLocaleString(undefined, {maximumFractionDigits:0})}`;
+      } catch {
+        return `${currency || "$"} ${Math.round(value)}`;
+      }
+    }
+    function hoursToHuman(h){
+      const totalMin = Math.round(h * 60);
+      const hh = Math.floor(totalMin / 60);
+      const mm = totalMin % 60;
+      return `${hh} h ${mm} min`;
+    }
+
+    function listBrands(){
+      return Object.keys(catalog.brands || {}).sort((a,b)=>a.localeCompare(b));
+    }
+    function listModels(brand){
+      const b = catalog.brands?.[brand];
+      if (!b) return [];
+      return Object.keys(b.models || {}).sort((a,b)=>a.localeCompare(b));
+    }
+    function listParts(brand, model){
+      const globals = Object.keys(catalog.globalParts || {});
+      const modelParts = (catalog.brands?.[brand]?.models?.[model]?.parts) || {};
+      const fromModel = Object.keys(modelParts);
+      return uniq([ ...fromModel, ...globals ]).sort((a,b)=>a.localeCompare(b));
+    }
+    function getPartTime(brand, model, partName){
+      const modelTime = catalog.brands?.[brand]?.models?.[model]?.parts?.[partName];
+      if (typeof modelTime === 'number') return modelTime;
+      const globalTime = catalog.globalParts?.[partName];
+      if (typeof globalTime === 'number') return globalTime;
+      return 1.0; // fallback sensato
+    }
+
+    function generateId(){
+      return 'i_' + Math.random().toString(36).slice(2, 9);
+    }
+
+    // ================== Referencias UI ==================
+    const brandSelect = document.getElementById('brandSelect');
+    const modelSelect = document.getElementById('modelSelect');
+    const partSelect = document.getElementById('partSelect');
+    const timeInput = document.getElementById('timeInput');
+    const sideChips = document.getElementById('sideChips');
+    const qtyMinus = document.getElementById('qtyMinus');
+    const qtyPlus = document.getElementById('qtyPlus');
+    const qtyInput = document.getElementById('qtyInput');
+    const addItemBtn = document.getElementById('addItemBtn');
+    const clearFormBtn = document.getElementById('clearFormBtn');
+
+    const newPartName = document.getElementById('newPartName');
+    const newPartTime = document.getElementById('newPartTime');
+    const scopeChips = document.getElementById('scopeChips');
+    const scopeModeloChip = document.getElementById('scopeModeloChip');
+    const addPartBtn = document.getElementById('addPartBtn');
+    const resetCatalogBtn = document.getElementById('resetCatalogBtn');
+
+    const rateInput = document.getElementById('rateInput');
+    const currencyInput = document.getElementById('currencyInput');
+
+    const totalTimeHuman = document.getElementById('totalTimeHuman');
+    const totalTimeRaw = document.getElementById('totalTimeRaw');
+    const totalCost = document.getElementById('totalCost');
+    const rateDisplay = document.getElementById('rateDisplay');
+
+    const itemsTbody = document.getElementById('itemsTbody');
+    const printBtn = document.getElementById('printBtn');
+    const clearJobBtn = document.getElementById('clearJobBtn');
+
+    // ================== Render inicial ==================
+    function renderBrands(){
+      const brands = listBrands();
+      brandSelect.innerHTML = brands.map(b => `<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`).join('');
+    }
+    function renderModels(){
+      const brand = brandSelect.value;
+      const models = listModels(brand);
+      modelSelect.innerHTML = models.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+    }
+    function renderParts(){
+      const brand = brandSelect.value;
+      const model = modelSelect.value;
+      const parts = listParts(brand, model);
+      partSelect.innerHTML = parts.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+      // Actualizar tiempo sugerido
+      const sel = partSelect.value;
+      timeInput.value = String(getPartTime(brand, model, sel));
+    }
+    function renderScopeChipAvailability(){
+      // Solo habilitado "modelo" si hay marca+modelo válidos
+      const hasModel = !!brandSelect.value && !!modelSelect.value;
+      scopeModeloChip.style.opacity = hasModel ? '1' : '.5';
+      scopeModeloChip.style.pointerEvents = hasModel ? 'auto' : 'none';
+      if (!hasModel){
+        // Si estaba seleccionado "modelo", vuelve a global
+        const current = document.querySelector('#scopeChips .chip.active');
+        if (current?.dataset.scope === 'modelo'){
+          setScope('global');
+        }
+      }
+    }
+    function setScope(scope){
+      document.querySelectorAll('#scopeChips .chip').forEach(c => c.classList.toggle('active', c.dataset.scope === scope));
+    }
+    function setSide(side){
+      document.querySelectorAll('#sideChips .chip').forEach(c => c.classList.toggle('active', c.dataset.side === side));
+    }
+    function getActiveScope(){
+      const active = document.querySelector('#scopeChips .chip.active');
+      return active?.dataset.scope || 'global';
+    }
+    function getActiveSide(){
+      const active = document.querySelector('#sideChips .chip.active');
+      return active?.dataset.side || 'ambos';
+    }
+
+    function renderJob(){
+      if (!job.items.length){
+        itemsTbody.innerHTML = `<tr><td colspan="7" class="muted">Aún no hay ítems. Agrega piezas desde el panel izquierdo.</td></tr>`;
+      } else {
+        itemsTbody.innerHTML = job.items.map(item => {
+          const subtotal = (num(item.timePerUnit) * num(item.quantity));
+          const sideClass = item.side === 'izquierdo' ? 'left' : item.side === 'derecho' ? 'right' : 'both';
+          const sideLabel = item.side === 'izquierdo' ? 'Izq.' : item.side === 'derecho' ? 'Der.' : 'Ambos';
+          return `
+            <tr data-id="${item.id}">
+              <td>
+                <div style="font-weight:600">${escapeHtml(item.partName)}</div>
+                <div class="muted" style="font-size:12px">${escapeHtml(item.partNote || '')}</div>
+              </td>
+              <td class="muted">${escapeHtml(item.brand)} — ${escapeHtml(item.model)}</td>
+              <td>
+                <span class="tag ${sideClass}"><span class="dot"></span>${sideLabel}</span>
+              </td>
+              <td class="right">
+                <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center">
+                  <button class="btn small icon round qty-minus" title="Restar">−</button>
+                  <input class="qty-input mono" type="number" min="1" step="1" value="${num(item.quantity)}" style="width:68px; text-align:center" />
+                  <button class="btn small icon round qty-plus" title="Sumar">+</button>
+                </div>
+              </td>
+              <td class="right">
+                <input class="time-input mono" type="number" step="0.1" min="0" value="${num(item.timePerUnit).toFixed(1)}" style="width:96px; text-align:right" />
+              </td>
+              <td class="right mono">${subtotal.toFixed(1)}</td>
+              <td class="right">
+                <div style="display:flex; gap:6px; justify-content:flex-end">
+                  <button class="btn small ghost dup-btn" title="Duplicar">Duplicar</button>
+                  <button class="btn small" style="background:linear-gradient(180deg,#ef4444,#b91c1c); border-color:transparent" title="Eliminar">Eliminar</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+      renderSummary();
+    }
+
+    function renderSummary(){
+      const totalHours = job.items.reduce((acc, it) => acc + (num(it.timePerUnit) * num(it.quantity)), 0);
+      totalTimeHuman.textContent = hoursToHuman(totalHours);
+      totalTimeRaw.textContent = `${totalHours.toFixed(1)} h`;
+      // Tarifa
+      const rate = num(settings.rate);
+      rateDisplay.textContent = rate > 0 ? fmtMoney(rate, settings.currency) : '—';
+      totalCost.textContent = rate > 0 ? fmtMoney(rate * totalHours, settings.currency) : '—';
+    }
+
+    function escapeHtml(str){
+      if (str === undefined || str === null) return '';
+      return String(str)
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'","&#039;");
+    }
+
+    // ================== Init ==================
+    function init(){
+      renderBrands();
+      // Seleccionar primera marca y modelo
+      brandSelect.value = listBrands()[0] || '';
+      renderModels();
+      modelSelect.value = listModels(brandSelect.value)[0] || '';
+      renderParts();
+      renderScopeChipAvailability();
+
+      // Ajustar tarifa/moneda
+      rateInput.value = settings.rate || '';
+      currencyInput.value = settings.currency || '$';
+      renderJob();
+    }
+
+    init();
+
+    // ================== Eventos UI ==================
+    brandSelect.addEventListener('change', () => {
+      renderModels();
+      renderParts();
+      renderScopeChipAvailability();
+    });
+    modelSelect.addEventListener('change', () => {
+      renderParts();
+      renderScopeChipAvailability();
+    });
+
+    partSelect.addEventListener('change', () => {
+      const t = getPartTime(brandSelect.value, modelSelect.value, partSelect.value);
+      timeInput.value = String(t);
+    });
+
+    sideChips.addEventListener('click', (e) => {
+      const chip = e.target.closest('.chip');
+      if (!chip) return;
+      setSide(chip.dataset.side);
+    });
+
+    scopeChips.addEventListener('click', (e) => {
+      const chip = e.target.closest('.chip');
+      if (!chip) return;
+      if (chip.dataset.scope === 'modelo'){
+        const valid = brandSelect.value && modelSelect.value;
+        if (!valid) return; // bloqueado si no hay modelo
+      }
+      document.querySelectorAll('#scopeChips .chip').forEach(c => c.classList.toggle('active', c === chip));
+    });
+
+    qtyPlus.addEventListener('click', () => {
+      const v = Math.max(1, Math.round(num(qtyInput.value)) + 1);
+      qtyInput.value = v;
+    });
+    qtyMinus.addEventListener('click', () => {
+      const v = Math.max(1, Math.round(num(qtyInput.value)) - 1);
+      qtyInput.value = v;
+    });
+
+    clearFormBtn.addEventListener('click', () => {
+      qtyInput.value = 1;
+      setSide('ambos');
+      const t = getPartTime(brandSelect.value, modelSelect.value, partSelect.value);
+      timeInput.value = String(t);
+    });
+
+    addItemBtn.addEventListener('click', () => {
+      const brand = brandSelect.value;
+      const model = modelSelect.value;
+      const partName = partSelect.value;
+      const side = getActiveSide();
+      const quantity = Math.max(1, Math.round(num(qtyInput.value)));
+      const timePerUnit = Math.max(0, num(timeInput.value));
+
+      if (!brand || !model || !partName){
+        alert('Selecciona Marca, Modelo y Pieza.');
+        return;
+      }
+      if (timePerUnit <= 0){
+        alert('El tiempo por unidad debe ser mayor a 0.');
+        return;
+      }
+
+      const item = {
+        id: generateId(),
+        brand, model, partName, side,
+        quantity, timePerUnit
+      };
+      job.items.push(item);
+      saveJob();
+      renderJob();
+      // Feedback
+      flashButton(addItemBtn);
+    });
+
+    addPartBtn.addEventListener('click', () => {
+      const name = (newPartName.value || '').trim();
+      const t = num(newPartTime.value);
+      if (!name){
+        alert('Ingresa el nombre de la pieza.');
+        return;
+      }
+      if (!(t > 0)){
+        alert('Ingresa un tiempo por unidad válido (> 0).');
+        return;
+      }
+      const scope = getActiveScope();
+      if (scope === 'modelo'){
+        const b = brandSelect.value, m = modelSelect.value;
+        if (!b || !m){
+          alert('Selecciona una Marca y Modelo para agregar la pieza al modelo.');
+          return;
+        }
+        catalog.brands[b] = catalog.brands[b] || { models: {} };
+        catalog.brands[b].models = catalog.brands[b].models || {};
+        catalog.brands[b].models[m] = catalog.brands[b].models[m] || { parts: {} };
+        catalog.brands[b].models[m].parts[name] = t;
+      } else {
+        catalog.globalParts[name] = t;
+      }
+      saveCatalog();
+      // Refrescar combo de piezas y seleccionar la nueva
+      renderParts();
+      partSelect.value = name;
+      timeInput.value = String(t);
+      newPartName.value = '';
+      newPartTime.value = '';
+      flashButton(addPartBtn);
+    });
+
+    resetCatalogBtn.addEventListener('click', () => {
+      if (!confirm('¿Restablecer el catálogo a los valores de ejemplo? Se perderán las piezas agregadas.')) return;
+      localStorage.removeItem(STORAGE.catalog);
+      catalog = loadCatalog();
+      renderBrands();
+      brandSelect.value = listBrands()[0] || '';
+      renderModels();
+      modelSelect.value = listModels(brandSelect.value)[0] || '';
+      renderParts();
+      renderScopeChipAvailability();
+    });
+
+    rateInput.addEventListener('input', () => {
+      settings.rate = num(rateInput.value);
+      saveSettings();
+      renderSummary();
+    });
+    currencyInput.addEventListener('input', () => {
+      settings.currency = currencyInput.value || '$';
+      saveSettings();
+      renderSummary();
+    });
+
+    printBtn.addEventListener('click', () => window.print());
+    clearJobBtn.addEventListener('click', () => {
+      if (!confirm('¿Vaciar el trabajo actual?')) return;
+      job.items = [];
+      saveJob();
+      renderJob();
+    });
+
+    // Delegación de eventos para la tabla de items
+    itemsTbody.addEventListener('click', (e) => {
+      const row = e.target.closest('tr[data-id]');
+      if (!row) return;
+      const id = row.dataset.id;
+      const item = job.items.find(i => i.id === id);
+      if (!item) return;
+
+      // Cantidad +
+      if (e.target.closest('.qty-plus')){
+        item.quantity = Math.max(1, Math.round(num(item.quantity)) + 1);
+        saveJob(); renderJob(); return;
+      }
+      // Cantidad -
+      if (e.target.closest('.qty-minus')){
+        item.quantity = Math.max(1, Math.round(num(item.quantity)) - 1);
+        saveJob(); renderJob(); return;
+      }
+      // Duplicar
+      if (e.target.closest('.dup-btn')){
+        const copy = { ...item, id: generateId() };
+        job.items.push(copy);
+        saveJob(); renderJob(); return;
+      }
+      // Eliminar
+      if (e.target.closest('button') && e.target.textContent.trim().toLowerCase().includes('eliminar')){
+        job.items = job.items.filter(i => i.id !== id);
+        saveJob(); renderJob(); return;
+      }
+    });
+
+    itemsTbody.addEventListener('input', (e) => {
+      const row = e.target.closest('tr[data-id]');
+      if (!row) return;
+      const id = row.dataset.id;
+      const item = job.items.find(i => i.id === id);
+      if (!item) return;
+
+      if (e.target.classList.contains('qty-input')){
+        item.quantity = Math.max(1, Math.round(num(e.target.value)));
+        saveJob(); renderJob(); return;
+      }
+      if (e.target.classList.contains('time-input')){
+        item.timePerUnit = Math.max(0, num(e.target.value));
+        saveJob(); renderJob(); return;
+      }
+    });
+
+    function flashButton(btn){
+      const original = btn.style.boxShadow;
+      btn.style.boxShadow = '0 0 0 3px rgba(34,197,94,.35)';
+      setTimeout(()=>{ btn.style.boxShadow = original; }, 250);
+    }
+
+    // Asegurar side y scope por defecto
+    setSide('ambos');
+    setScope('global');
+
+    // ================== Fin Script ==================
+  </script>
+</body>
+</html>
